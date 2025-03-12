@@ -260,7 +260,14 @@ la mediana (función `stats::median`) de la variable `size` y almacénalos en la
 
 ```{r}
 
-
+pack_sum <- cran %>%
+  summarise(
+    count = n(),
+    unique = n_distinct(ip_id),
+    countries = n_distinct(country),
+    med_bytes = stats::median(size, na.rm = TRUE)
+  )
+ 
 
 
 
@@ -288,7 +295,9 @@ la mediana (función `stats::median`) de la variable `size` y almacénalos en la
 ```
 22. Muestra el 1% de los paquetes que han sido más descargados. Para ello puedes utilizar la función `quantile(????, probs=0.99)`. Siendo ??? la variable de interés, que te permitirá estimar el umbral. Los valores por encima serán los que nos interesen. Almacena estos paquetes **top descargas** en la variable `top_counts`. **NOTA: De ahora en adelante concatena todas las operaciones partiendo del elemento `cran`, usando _pipes_**.
 ```{r}
-
+top_counts <- cran %>%
+  count(package, name = "count") %>%  
+  filter(count > quantile(count, probs = 0.99, na.rm = TRUE))
 
 
 
@@ -298,7 +307,10 @@ la mediana (función `stats::median`) de la variable `size` y almacénalos en la
 23. Repite el apartado anterior utilizando **pipes** para que finalmente el resultado se ordene, en orden descendente, según el número de descargas (`count`) y se almacene el la variable `top_counts_sorted`
 ```{r}
 
-
+top_counts <- cran %>%
+  count(package, name = "count") %>%  
+  filter(count > quantile(count, probs = 0.99, na.rm = TRUE))%>%
+  arrange(-count)
 
 
 
@@ -311,7 +323,12 @@ la mediana (función `stats::median`) de la variable `size` y almacénalos en la
 24. En lugar de utilizar el recuento de descargas, es más lógico considerar el número de ordenadores distintos en los que se han descargado las librerías, para ello utilizaríamos la columna `unique` que cuenta solo una descarga por ordenador, independientemente del número de veces que se descarge una librería. Repite los cálculos considerando esta variable y almacena el resultado en `top_unique_sorted`.
 
 ```{r}
-
+top_unique_sorted <- cran %>%
+  count(package, ip_id, name = "unique") %>%  
+  group_by(package) %>%  
+  summarise(unique = n()) %>%  
+  filter(unique > quantile(unique, probs = 0.99, na.rm = TRUE)) %>%  
+  arrange(desc(unique)) 
 
 
 
@@ -323,7 +340,8 @@ la mediana (función `stats::median`) de la variable `size` y almacénalos en la
 25. Completa lo que se indica  usando `pipes`. Selecciona las columnas `ip_id, country, package, size` de `cran` y muestra el resultado por pantalla usando `print`. No es necesario almacenar.
 
 ```{r}
-
+print(cran%>%
+        select(ip_id,country,package,size))
 
 
 ```
@@ -331,19 +349,24 @@ la mediana (función `stats::median`) de la variable `size` y almacénalos en la
 26. Añade una columna llamada `size_mb` que contenga el tamaño de cada descarga en megabytes.
 
 ```{r}
-
+cran<-cran%>%
+  mutate(size_mb=size/2^20)
 
 
 ```
 
 27. Selecciona aquellas descargas cuyo tamaño es menor o igual que 0.5 Mbytes
 ```{r}
-
+cran%>%
+  filter(size_mb<=0.5)
 
 
 ```
 28. Repite el apartado anterior ordenando los resultados, en orden descendente según el tamaño en Megabytes y muéstralo por pantalla.
 ```{r}
+print(cran%>%
+  filter(size_mb<=0.5)%>%
+  arrange(-size_mb))
 
 
 
