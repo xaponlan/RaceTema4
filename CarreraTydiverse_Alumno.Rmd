@@ -413,8 +413,6 @@ cran %>%
 
 ```
 
-# tidyr.
-Carga el fichero de datos `datostidyr.Rdata` que contiene varios conjuntos de datos que vamos a usar en los siguientes ejercicios.
 
 29. Observa el data frame `students` :
   grade male female
@@ -427,50 +425,55 @@ Carga el fichero de datos `datostidyr.Rdata` que contiene varios conjuntos de da
 La columna `grade` es la calificación y las dos siguientes el número de estudiantes hombre y mujer que han recibido dicha calificación.
 ¿ Cuáles son las variables ?. Transfórmalo en un conjunto `tidy` con las variables, `grade, sex y count`
 ```{r}
-load(file="./data/datostidyr.Rdata")
-library(tidyr)
-students_tidy <- students %>%
-  pivot_longer(cols = c(male, female), 
-               names_to = "sex",        
-               values_to = "count")  
-students_tidy
+library(tidyverse)
+load(file = "datostidyr.Rdata")
+# Las variables son grade, male y female
+
+tidy_students <- students %>%
+  pivot_longer(cols = 2:3, names_to = "sex", values_to = "count")
+tidy_students
+  
 ```
 30. Considera el conjunto ´students2´, que es similar al primero pero que se han recogido datos correspondientes a dos grupos, (`male_1, female_1`, etc). Transfórmalo en un conjunto `tidy` añadiendo una columna adicional correspondiente al grupo (llama a la nueva variable `class`)
 ```{r}
-students2_tidy <- students2 %>%
-  pivot_longer(cols = starts_with("male") | starts_with("female"),  # Selecciona todas las columnas de género
-               names_to = c("sex", "class"),  # Separa en dos variables
-               names_pattern = "(male|female)_(\\d+)",  # Expresión regular para extraer 'sex' y 'class'
-               values_to = "count") 
-
-
-
+tidy_students2 <- students2 %>%
+  pivot_longer(cols = c(male_1,female_1,male_2, female_2), names_to = c("sex","class"), names_sep = "_", values_to = "count")
+tidy_students2
 
 ```
 31. Considera el conjunto `students3` y observa por qué no es un `tidy data` . Las variables finales del conjunto deberían ser: `name, class, midterm, final`. Dado que un alumno solo puede estar en una de las clases aparecen muchos `NA`, al reorganizar, usa `na.rm=TRUE` en las opciones de `gather`
 ```{r}
-
-
-
-
+students3
+tidy_students3 <- students3 %>%
+  gather(key = "class", value = "score", class1:class5, na.rm = TRUE) %>%
+  select(name, class, test, score)
+tidy_students3
 ```
 32. Considera que la columna `class` queremos especificarla con valores, 1,2,3,4 y 5 en lugar de class1, ..., class5. En librería de importación de datos (`readr`) se proporcionan funciones que permite identificar y extraer diversos tipos de datos. Son las funciones `parse_XXXX`. Observa el efecto de aplicar `parse_number('class5')` y utiliza el resultado para realizar la tarea solicitada.
 
 ```{r}
+library(readr)
+parse_number('class5')
 
 
-
-
-
+tidy_students3 <- students3 %>%
+  gather(key = "class", value = "score", 3:7, na.rm = TRUE) %>%
+  mutate(class = parse_number(class)) %>%
+  select(name, class, test, score)
+tidy_students3
 
 ```
 33. Observa el conjunto `students4` donde se presenta el problema de tener varias observaciones en la misma tabla. Separa el conjunto en dos tablas, una que contenga información relativa a los estudiantes, que llamarás `student_info`, que no debe contener repeticiones, y otra con las calificaciones y la clave primaria que enlaza ambas tablas(`id`), que llamarás `gradebook`.
 ```{r}
+students4
+student_info <- students4 %>%
+  select(id,name,sex) %>%
+  distinct()
+gradebook <- students4 %>%
+  select(id,class,midterm)
 
-
-
-
-
+student_info
+gradebook
 
 
 
@@ -478,9 +481,18 @@ students2_tidy <- students2 %>%
 ```
 34. Consideremos el caso de una observación almacenada en varias tablas. Observa los datos almacenados en `failed` y `passed` con la información de los alumnos que suspeden (calificaciones C,D,E,F) y los que aprueban (calificaciones A, B). Debes unir ambos conjuntos en uno que contenga una columna adicional llamada `status` que indicará `passed` o `failed` según la situación de cada alumno, puedes usar la función `bind_rows`.
 ```{r}
+failed
+passed
+
+failed <- failed %>%
+  mutate(status = "failed")
+
+passed <- passed %>%
+  mutate(status = "passed")
 
 
-
+students_cal <- bind_rows(failed, passed)
+students_cal
 ```
 # Pongamos todo en común.
 
@@ -488,38 +500,32 @@ students2_tidy <- students2 %>%
 Considera los datos almacenado en `sat` y haz las transformaciones adecuadas para que las columnas del conjunto `tidy` sean `score_range, part, sex, count` en ese orden. Ten en cuenta que los datos totales no es necesario almacenarlos ya que se pueden generar a posteriori.
 
 ```{r}
+tidy_sat <- sat %>%
+  pivot_longer(cols = c(read_male,read_fem, math_male,math_fem,write_male,write_fem), names_to = c("part","sex"), names_sep = "_", values_to = "count") %>%
+  select(score_range, part, sex, count)
 
-
-
-
+tidy_sat
 
 
 ```
 
 36. Utiliza agrupamientos, según las variables `part, sex` y genera dos nuevas columnas que contengan el número total de estudiantes en dicho grupo, y la proporción dentro del grupo. Almacénalas en las variables `total y prop` respectivamente.
 ```{r}
+tidy_sat <- tidy_sat %>%
+  group_by(part,sex) %>%
+  mutate(total = sum(count), prop = count/total)
 
 
 
-
-
-
-
-
+tidy_sat
 
 ```
 37. Representa gráficamente el conjunto obtenido para mostrar las diferencias entre hombres y mujeres, en las diferentes pruebas para cada una de las franjas de calificación.
 ```{r}
-
-
-
-
-
-
-
-
-
-
+ggplot(tidy_sat, aes(x = score_range, y = prop, colour = sex)) +
+  geom_point() + 
+  facet_wrap(.~part) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 
 ```
@@ -529,53 +535,62 @@ Considera los datos almacenado en `sat` y haz las transformaciones adecuadas par
 
 38. La función `today` devuelve la fecha actual. Almacéna la fecha actual en `this_day`, y muéstrala por pantalla. Usa las funciones `year, month y day` para extraer cada una de las partes. `wday` para obtener el día de la semana ()
 ```{r}
-
-
-
-
-
+this_day <- today()
+this_day
+year(this_day)
+month(this_day)
+day(this_day)
+wday(this_day)
 
 
 ```
 39. Guarda el instante actual en una variable llamada `this_moment` con la función `now`
 y muéstralo por pantalla. Usa las funciónes `hour, minute, second` para extraer la información de cada elemento.
 ```{r}
-
-
-
-
+this_moment <- now()
+this_moment
+hour(this_moment)
+minute(this_moment)
+second(this_moment)
 
 ```
 40. La librería `lubridate` dispone de múltiples funciones para importar en formato fecha datos con un gran variedad de formatos de entrada `ymd(), dmy(), hms(), ymd_hms()` donde cada letra indica _years (y),months (m), days (d), hours (h), minutes (m), y seconds (s)_. Prueba my_date <- ymd("2019-02-14"), y determina de que clase es `my_date`. Las funciones son muy robustas y pueden intepretar correctamente diversos formato. Prueba `ymd()` para importar la fecha  __"1989 May 17"__. ¿Cómo importarías __"March 12, 1975"__?
 ```{r}
-
-
-
+my_date <- ymd("2019-02-14")
+class(my_date)
+ymd("1989 May 17")
+mdy("March 12, 1975")
 ```
 41. Importa el valor numérico `25081985`, sabiendo que el formato es dia, mes, año, y posteriormente `192012` donde se ha almacenado año, mes y día. Modifica el campo fecha en el segundo caso añadiendo algún carácter separador para eliminar la ambigüedad.
 ```{r}
 fecha<-'19200102'
 ymd(fecha)
 
+date1 <- dmy("25081985")
+date1
 
+date2<- ymd("1920-1-2")
+date2
 
 
 ```
 42. Almacena la cadena `2014-08-23 17:23:02` en la variable `dt1`  e impórtala para que incluya la fecha y la hora,posteriormente importa la cadena `"03:22:14"` (hh:mm:ss)
 ```{r}
+dt1 <- "2014-08-23 17:23:02"
+ymd_hms(dt1)
 
-
-
+t2 <- "03:22:14"
+hms(t2)
 
 ```
 43. Importa el vector de fechas almacenado el `dt2`
 ```{r}
-
+dt2
 ```
 44. Podemos reasingar nuevos valores a una variable fecha/hora con la función `update`
 , por ejemplo: `update(this_moment, hours = 8, minutes = 34, seconds = 55)`. Actualiza la variable `this_moment` creada anteriormente para que contenga la hora actual.
 ```{r}
-
+update(this_moment, hours = 8, minutes = 34, seconds = 55)
 ```
 45. __Zonas horarias__. Considera que estás en Nueva York, que planeas visitar a un amigo en Hong Kong y que has perdido tu itinerario, pero sabes que tu vuelo sale de Nueva York a las 17:34 (17:34 horas) pasado mañana. También sabes que el vuelo está programado para llegar a Hong Kong exactamente 15 horas y 50 minutos después de la salida. Vamos a reconstruir el itinerario:
   + Genera la fecha actual, con `now` e indica la zona horaria de Nueva York(America/New_York) (la función `OlsonNames()` devuelve todas las zonas horarias) y almacénala en la variable `nyc`.
@@ -587,15 +602,22 @@ ymd(fecha)
   Cuando consideramos zonas horarias, peridos que incluyen años bisiestos, etc. El manejo de fecha requiere de librerías como __lubridate__ para facilitar estas tareas.
   
 ```{r}
+nyc<- now(tzone = "America/New_York")
+nyc
 
+salida <- nyc + days(2)
+salida
 
+salida <- update(salida, hours = 17, minutes= 34)
 
+llegada_ny <- salida + hour(15) + minute(50)
 
+llegada_hk <- with_tz(llegada_ny,tzone = "Asia/Hong_Kong")
 
-
-
-
-
+ultima_vez <- dmy("17 June 2008",tz = "Asia/Singapore")
+tiempo_transcurrido <- interval(ultima_vez, now()) %>% as.period()
+tiempo_transcurrido
+#Hace 16 años 8 meses y 24 días
 ```
   
   
