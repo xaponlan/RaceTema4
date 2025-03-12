@@ -133,7 +133,8 @@ glimpse(cran)
 
 4. Elige únicamente las variables `ip_id, package, country`
 ```{r}
-
+cran%>%
+  select(ip_id,package,country)
 ```
 5. Elige todas las variables entre `r_arch y country` 
 ```{r}
