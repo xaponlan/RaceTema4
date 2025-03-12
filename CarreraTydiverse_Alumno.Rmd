@@ -376,6 +376,13 @@ print(cran%>%
 `cran%>%...+geom_point()`
 
 ```{r}
+library(ggplot2)
+cran %>%
+  group_by(country) %>%  
+  summarise(total_traffic = sum(size, na.rm = TRUE)) %>%  
+  filter(total_traffic > quantile(total_traffic, probs = 0.90, na.rm = TRUE)) %>%  
+  arrange(desc(total_traffic)) %>%  
+  ggplot(aes(x = reorder(country, -total_traffic), y = total_traffic))+geom_point()
 
 
 
@@ -420,12 +427,21 @@ Carga el fichero de datos `datostidyr.Rdata` que contiene varios conjuntos de da
 La columna `grade` es la calificación y las dos siguientes el número de estudiantes hombre y mujer que han recibido dicha calificación.
 ¿ Cuáles son las variables ?. Transfórmalo en un conjunto `tidy` con las variables, `grade, sex y count`
 ```{r}
-
-
-
+load(file="./data/datostidyr.Rdata")
+library(tidyr)
+students_tidy <- students %>%
+  pivot_longer(cols = c(male, female), 
+               names_to = "sex",        
+               values_to = "count")  
+students_tidy
 ```
 30. Considera el conjunto ´students2´, que es similar al primero pero que se han recogido datos correspondientes a dos grupos, (`male_1, female_1`, etc). Transfórmalo en un conjunto `tidy` añadiendo una columna adicional correspondiente al grupo (llama a la nueva variable `class`)
 ```{r}
+students2_tidy <- students2 %>%
+  pivot_longer(cols = starts_with("male") | starts_with("female"),  # Selecciona todas las columnas de género
+               names_to = c("sex", "class"),  # Separa en dos variables
+               names_pattern = "(male|female)_(\\d+)",  # Expresión regular para extraer 'sex' y 'class'
+               values_to = "count") 
 
 
 
